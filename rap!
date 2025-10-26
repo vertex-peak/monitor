@@ -1,0 +1,704 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+local l_ReplicatedStorage_0 = game:GetService("ReplicatedStorage");
+local l_Players_0 = game:GetService("Players");
+local _ = game:GetService("StarterGui");
+local l_Modules_0 = l_ReplicatedStorage_0:WaitForChild("Modules");
+local l_Shared_0 = l_ReplicatedStorage_0:WaitForChild("Shared");
+local l_SkinCrates_0 = l_ReplicatedStorage_0:WaitForChild("SkinCrates");
+local l_Sounds_0 = l_ReplicatedStorage_0:WaitForChild("Sounds");
+local v7 = require(l_Modules_0.Trove);
+local l_Client_0 = require(l_Modules_0.Replion).Client;
+local v9 = require(l_Modules_0.Net);
+local v10 = require(l_Shared_0.Weapons);
+local v11 = require(l_Shared_0.Finishers);
+local v12 = require(l_Modules_0.Inventory);
+local v13 = require(l_ReplicatedStorage_0.Modules.Inventory.Client);
+local _ = require(l_Modules_0.Inventory.InventoryTypes);
+local v15 = require(l_Modules_0.Trading.TradeData);
+local v16 = require(l_Modules_0.Message);
+local v17 = require("./TradePinController");
+local v18 = require(l_SkinCrates_0.Items);
+local v19 = require("./RAPController");
+local v20 = require("../GuiController");
+local l_PlayerGui_0 = l_Players_0.LocalPlayer:WaitForChild("PlayerGui");
+local l_bars_0 = l_PlayerGui_0:WaitForChild("GeneralGUI"):WaitForChild("bars");
+local l_BoothAddItems_0 = l_PlayerGui_0:WaitForChild("BoothAddItems");
+local l_Main_0 = l_BoothAddItems_0.Main;
+local l_RaritiesTemplates_0 = l_Main_0.UIAspectRatioConstraint.RaritiesTemplates;
+l_RaritiesTemplates_0.Parent = nil;
+local l_Background_0 = l_Main_0.Main.Preview.Background;
+local v27 = nil;
+local v28 = {};
+local v29 = nil;
+local v30 = "";
+local v31 = v7.new();
+local l_TradeDetails_0 = l_Main_0.Main.YourItems.TradeDetails;
+local l_Icon_0 = l_TradeDetails_0.Icon;
+local l_SkinName_0 = l_TradeDetails_0.SkinName;
+local l_TradeStatus_0 = l_TradeDetails_0.TradeStatus;
+local l_CloseButton_0 = l_TradeDetails_0.CloseButton;
+local function v49(v37, v38) --[[ Line: 68 ]] --[[ Name: ShowDetails ]]
+    -- upvalues: v31 (copy), l_TradeDetails_0 (copy), l_CloseButton_0 (copy), l_Icon_0 (copy), l_SkinName_0 (copy), l_TradeStatus_0 (copy)
+    local function v44(v39) --[[ Line: 70 ]] --[[ Name: toDHMS ]]
+        local v40 = math.floor(v39 / 86400);
+        local v41 = math.floor(v39 / 3600 % 24);
+        local v42 = math.floor(v39 % 3600 / 60);
+        local v43 = math.floor(v39 % 60);
+        if v40 > 0 then
+            return string.format("%02dd %02dh %02dm %02ds", v40, v41, v42, v43);
+        elseif v41 > 0 then
+            return string.format("%02dh %02dm %02ds", v41, v42, v43);
+        elseif v42 > 0 then
+            return string.format("%02dm %02ds", v42, v43);
+        else
+            return string.format("%02ds", v43);
+        end;
+    end;
+    if not v37 then
+        return;
+    else
+        v31:Clean();
+        v31:Add(function() --[[ Line: 93 ]]
+            -- upvalues: l_TradeDetails_0 (ref)
+            l_TradeDetails_0.Visible = false;
+        end);
+        v31:Add(l_CloseButton_0.MouseButton1Click:Connect(function() --[[ Line: 97 ]]
+            -- upvalues: v31 (ref)
+            v31:Clean();
+        end));
+        if v38 then
+            l_Icon_0.Image = v38;
+        end;
+        l_SkinName_0.Text = v37.Name;
+        local l_TradeLock_0 = v37.TradeLock;
+        l_TradeStatus_0.Text = "Tradable";
+        l_TradeStatus_0.TextColor3 = Color3.fromRGB(85, 170, 85);
+        if l_TradeLock_0 and l_TradeLock_0.Type == "Timestamp" and typeof(l_TradeLock_0.Time) == "number" then
+            local function v48() --[[ Line: 113 ]] --[[ Name: updateTimer ]]
+                -- upvalues: l_TradeLock_0 (copy), l_TradeStatus_0 (ref), v44 (copy)
+                while true do
+                    local l_workspace_ServerTimeNow_0 = workspace:GetServerTimeNow();
+                    local v47 = l_TradeLock_0.Time - l_workspace_ServerTimeNow_0;
+                    if v47 > 0 then
+                        l_TradeStatus_0.Text = ("Untradable (%*)"):format((v44(v47)));
+                        l_TradeStatus_0.TextColor3 = Color3.fromRGB(255, 80, 80);
+                        task.wait(1);
+                    else
+                        break;
+                    end;
+                end;
+                l_TradeStatus_0.Text = "Tradable";
+                l_TradeStatus_0.TextColor3 = Color3.fromRGB(85, 170, 85);
+            end;
+            l_TradeStatus_0.Text = "Loading...";
+            l_TradeStatus_0.TextColor3 = Color3.fromRGB(255, 255, 255);
+            v31:Add(task.spawn(v48));
+        elseif l_TradeLock_0 and l_TradeLock_0.Type == "Untradable" then
+            l_TradeStatus_0.Text = "Untradable";
+            l_TradeStatus_0.TextColor3 = Color3.fromRGB(255, 80, 80);
+        elseif l_TradeLock_0 then
+            l_TradeStatus_0.Text = "Untradable";
+            l_TradeStatus_0.TextColor3 = Color3.fromRGB(255, 80, 80);
+        end;
+        l_TradeDetails_0.Visible = true;
+        return;
+    end;
+end;
+local function _(v50) --[[ Line: 146 ]] --[[ Name: GetListingId ]]
+    -- upvalues: v27 (ref)
+    local v51 = v27:Get("SaleListings.Booth");
+    if not v51 then
+        return;
+    else
+        for v52, v53 in v51 do
+            if v53.ItemId == v50 then
+                return v52;
+            end;
+        end;
+        return;
+    end;
+end;
+local _ = function(v55) --[[ Line: 162 ]] --[[ Name: ItemIsSelling ]]
+    -- upvalues: v27 (ref)
+    local v56 = v27:Get("SaleListings.Booth");
+    if not v56 then
+        return false;
+    else
+        for _, v58 in v56 do
+            if v58.ItemId == v55 then
+                return true;
+            end;
+        end;
+        return false;
+    end;
+end;
+local function v73(v60, v61) --[[ Line: 178 ]] --[[ Name: WeaponButton ]]
+    -- upvalues: v10 (copy), v7 (copy), l_RaritiesTemplates_0 (copy), v13 (copy), v49 (copy), l_Background_0 (copy), v19 (copy), v27 (ref), v29 (ref), v28 (copy), l_Main_0 (copy)
+    local v62 = v10[v61.Name];
+    if not v62 then
+        return;
+    else
+        local v63 = v7.new();
+        local v64 = l_RaritiesTemplates_0[v62.Rarity]:Clone();
+        v64.SkinName.Text = v61.Name;
+        v64.Icon.Image = v62.Icon;
+        v64:SetAttribute("FilterType", "Weapons");
+        v64:SetAttribute("ItemType", "Weapon");
+        v64:SetAttribute("ItemName", v61.Name);
+        local l_v13_Item_0 = v13:GetItem("Weapon", v60);
+        if l_v13_Item_0 then
+            local l_TradeInfo_0 = v64:FindFirstChild("TradeInfo");
+            if l_TradeInfo_0 then
+                v63:Add(l_TradeInfo_0.Activated:Connect(function() --[[ Line: 202 ]]
+                    -- upvalues: v49 (ref), l_v13_Item_0 (copy), v62 (copy), v64 (copy)
+                    v49(l_v13_Item_0, v62.Icon, v64);
+                end));
+            end;
+            if l_v13_Item_0.TradeLock then
+                v64:SetAttribute("TradeLock", l_v13_Item_0.TradeLock.Time);
+                v64:SetAttribute("TradeLockType", l_v13_Item_0.TradeLock.Type);
+            end;
+        end;
+        v63:Add(v64.Activated:Connect(function() --[[ Line: 213 ]]
+            -- upvalues: l_Background_0 (ref), v62 (copy), v61 (copy), v19 (ref), v60 (copy), v27 (ref), v29 (ref)
+            local v67 = false;
+            l_Background_0.ItemPreview.ItemVector.Image = v62.Icon;
+            l_Background_0.SkinName.Text = v61.Name;
+            l_Background_0.TokenAmount.TokenAmount.Text = ("RAP Tokens: %*"):format(v19:GetRAP("Weapon", nil, v61.Name) or "?");
+            local l_v60_0 = v60;
+            local v69 = v27:Get("SaleListings.Booth");
+            local v70;
+            if not v69 then
+                v70 = false;
+            else
+                for _, v72 in v69 do
+                    if v72.ItemId == l_v60_0 then
+                        v70 = true;
+                        v67 = true;
+                    end;
+                    if v67 then
+                        break;
+                    end;
+                end;
+                if not v67 then
+                    v70 = false;
+                end;
+            end;
+            v67 = false;
+            l_Background_0.Button.TextLabel.Text = v70 and "Take Off" or "Sell";
+            v29 = {
+                uuid = v60, 
+                itemType = "Weapon"
+            };
+        end));
+        v63:Add(function() --[[ Line: 224 ]]
+            -- upvalues: v64 (copy), v29 (ref), v60 (copy), l_Background_0 (ref)
+            v64:Destroy();
+            if v29 and v29.uuid == v60 then
+                l_Background_0.ItemPreview.ItemVector.Image = "";
+                l_Background_0.SkinName.Text = "";
+                l_Background_0.TokenAmount.TokenAmount.Text = "RAP Tokens: ?";
+                l_Background_0.Button.TextLabel.Text = "";
+            end;
+        end);
+        v28[v60] = v63;
+        v64:AddTag("RapInfoButton");
+        v64.Parent = l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame;
+        return;
+    end;
+end;
+local function v87(v74, v75) --[[ Line: 244 ]] --[[ Name: FinisherButton ]]
+    -- upvalues: v11 (copy), v7 (copy), l_RaritiesTemplates_0 (copy), v13 (copy), v49 (copy), l_Background_0 (copy), v19 (copy), v27 (ref), v29 (ref), v28 (copy), l_Main_0 (copy)
+    local v76 = v11[v75.Name];
+    if not v76 then
+        return;
+    else
+        local v77 = v7.new();
+        local v78 = l_RaritiesTemplates_0[v76.Rarity]:Clone();
+        v78.SkinName.Text = v75.Name;
+        v78.Icon.Image = v76.Icon;
+        v78:SetAttribute("FilterType", "Finishers");
+        v78:SetAttribute("ItemType", "Finisher");
+        v78:SetAttribute("ItemName", v75.Name);
+        local l_v13_Item_1 = v13:GetItem("Finisher", v74);
+        if l_v13_Item_1 then
+            local l_TradeInfo_1 = v78:FindFirstChild("TradeInfo");
+            if l_TradeInfo_1 then
+                v77:Add(l_TradeInfo_1.Activated:Connect(function() --[[ Line: 268 ]]
+                    -- upvalues: v49 (ref), l_v13_Item_1 (copy), v76 (copy)
+                    v49(l_v13_Item_1, v76.Icon);
+                end));
+            end;
+            if l_v13_Item_1.TradeLock then
+                v78:SetAttribute("TradeLock", l_v13_Item_1.TradeLock.Time);
+                v78:SetAttribute("TradeLockType", l_v13_Item_1.TradeLock.Type);
+            end;
+        end;
+        v77:Add(v78.Activated:Connect(function() --[[ Line: 279 ]]
+            -- upvalues: l_Background_0 (ref), v76 (copy), v75 (copy), v19 (ref), v74 (copy), v27 (ref), v29 (ref)
+            local v81 = false;
+            l_Background_0.ItemPreview.ItemVector.Image = v76.Icon;
+            l_Background_0.SkinName.Text = v75.Name;
+            l_Background_0.TokenAmount.TokenAmount.Text = ("RAP Tokens: %*"):format(v19:GetRAP("Finisher", nil, v75.Name) or "?");
+            local l_v74_0 = v74;
+            local v83 = v27:Get("SaleListings.Booth");
+            local v84;
+            if not v83 then
+                v84 = false;
+            else
+                for _, v86 in v83 do
+                    if v86.ItemId == l_v74_0 then
+                        v84 = true;
+                        v81 = true;
+                    end;
+                    if v81 then
+                        break;
+                    end;
+                end;
+                if not v81 then
+                    v84 = false;
+                end;
+            end;
+            v81 = false;
+            l_Background_0.Button.TextLabel.Text = v84 and "Take Off" or "Sell";
+            v29 = {
+                uuid = v74, 
+                itemType = "Finisher"
+            };
+        end));
+        v77:Add(function() --[[ Line: 290 ]]
+            -- upvalues: v78 (copy), v29 (ref), v74 (copy), l_Background_0 (ref)
+            v78:Destroy();
+            if v29 and v29.uuid == v74 then
+                l_Background_0.ItemPreview.ItemVector.Image = "";
+                l_Background_0.SkinName.Text = "";
+                l_Background_0.TokenAmount.TokenAmount.Text = "RAP Tokens: ?";
+                l_Background_0.Button.TextLabel.Text = "";
+            end;
+        end);
+        v28[v74] = v77;
+        v78:AddTag("RapInfoButton");
+        v78.Parent = l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame;
+        return;
+    end;
+end;
+local function v101(v88, v89) --[[ Line: 310 ]] --[[ Name: WeaponSkinButton ]]
+    -- upvalues: v18 (copy), v7 (copy), l_RaritiesTemplates_0 (copy), v13 (copy), v49 (copy), l_Background_0 (copy), v19 (copy), v27 (ref), v29 (ref), v28 (copy), l_Main_0 (copy)
+    local v90 = v18[v89.Name];
+    if not v90 then
+        return;
+    elseif not v90.ItemName then
+        return;
+    else
+        local v91 = v7.new();
+        local v92 = l_RaritiesTemplates_0[v90.Rarity]:Clone();
+        v92.SkinName.Text = v89.Name;
+        v92.Icon.Image = v90.Icon;
+        v92:SetAttribute("FilterType", v90.ItemName);
+        v92:SetAttribute("ItemType", "WeaponSkin");
+        v92:SetAttribute("ItemSubType", v90.ItemName);
+        v92:SetAttribute("ItemName", v89.Name);
+        local l_v13_Item_2 = v13:GetItem("WeaponSkin", v88);
+        if l_v13_Item_2 then
+            local l_TradeInfo_2 = v92:FindFirstChild("TradeInfo");
+            if l_TradeInfo_2 then
+                v91:Add(l_TradeInfo_2.Activated:Connect(function() --[[ Line: 339 ]]
+                    -- upvalues: v49 (ref), l_v13_Item_2 (copy), v90 (copy)
+                    v49(l_v13_Item_2, v90.Icon);
+                end));
+            end;
+            if l_v13_Item_2.TradeLock then
+                v92:SetAttribute("TradeLock", l_v13_Item_2.TradeLock.Time);
+                v92:SetAttribute("TradeLockType", l_v13_Item_2.TradeLock.Type);
+            end;
+        end;
+        v91:Add(v92.Activated:Connect(function() --[[ Line: 351 ]]
+            -- upvalues: l_Background_0 (ref), v90 (copy), v89 (copy), v19 (ref), v88 (copy), v27 (ref), v29 (ref)
+            local v95 = false;
+            l_Background_0.ItemPreview.ItemVector.Image = v90.Icon;
+            l_Background_0.SkinName.Text = v89.Name;
+            l_Background_0.TokenAmount.TokenAmount.Text = ("RAP Tokens: %*"):format(v19:GetRAP("WeaponSkin", v90.ItemName, v89.Name) or "?");
+            local l_v88_0 = v88;
+            local v97 = v27:Get("SaleListings.Booth");
+            local v98;
+            if not v97 then
+                v98 = false;
+            else
+                for _, v100 in v97 do
+                    if v100.ItemId == l_v88_0 then
+                        v98 = true;
+                        v95 = true;
+                    end;
+                    if v95 then
+                        break;
+                    end;
+                end;
+                if not v95 then
+                    v98 = false;
+                end;
+            end;
+            v95 = false;
+            l_Background_0.Button.TextLabel.Text = v98 and "Take Off" or "Sell";
+            v29 = {
+                uuid = v88, 
+                itemType = "WeaponSkin"
+            };
+        end));
+        v91:Add(function() --[[ Line: 362 ]]
+            -- upvalues: v92 (copy), v29 (ref), v88 (copy), l_Background_0 (ref)
+            v92:Destroy();
+            if v29 and v29.uuid == v88 then
+                l_Background_0.ItemPreview.ItemVector.Image = "";
+                l_Background_0.SkinName.Text = "";
+                l_Background_0.TokenAmount.TokenAmount.Text = "RAP Tokens: ?";
+                l_Background_0.Button.TextLabel.Text = "";
+            end;
+        end);
+        v28[v88] = v91;
+        v92:AddTag("RapInfoButton");
+        v92.Parent = l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame;
+        return;
+    end;
+end;
+local function v107() --[[ Line: 382 ]] --[[ Name: FilterChanged ]]
+    -- upvalues: l_Main_0 (copy), v30 (ref)
+    local v102 = string.lower(l_Main_0.SearchItem.TextBox.Text);
+    if v30 == "" then
+        for _, v104 in l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame:GetChildren() do
+            if v104:IsA("GuiButton") and (v102 == "" or string.find(string.lower(v104.SkinName.Text), v102)) then
+                v104.Visible = true;
+            end;
+        end;
+        return;
+    else
+        for _, v106 in l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame:GetChildren() do
+            if v106:IsA("GuiButton") and (v102 == "" or string.find(string.lower(v106.SkinName.Text), v102)) then
+                v106.Visible = v106:GetAttribute("FilterType") == v30;
+            end;
+        end;
+        return;
+    end;
+end;
+return {
+    Start = function(v108) --[[ Line: 432 ]] --[[ Name: Start ]]
+        -- upvalues: v27 (ref), l_Client_0 (copy), l_Background_0 (copy), v15 (copy), v29 (ref), v16 (copy), v17 (copy), l_Sounds_0 (copy), l_Modules_0 (copy), l_BoothAddItems_0 (copy), l_bars_0 (copy), v20 (copy), v9 (copy), l_Main_0 (copy), v107 (copy), v30 (ref), l_ReplicatedStorage_0 (copy), v7 (copy)
+        v27 = l_Client_0:WaitReplion("Data");
+        v108:SetWeapons();
+        v108:SetFinishers();
+        v108:SetWeaponSkins();
+        v108:SetCategories();
+        l_Background_0.EnterTokenAmount.TextBox:GetPropertyChangedSignal("Text"):Connect(function() --[[ Line: 439 ]]
+            -- upvalues: l_Background_0 (ref), v15 (ref)
+            local v109 = tonumber(l_Background_0.EnterTokenAmount.TextBox.Text);
+            if not v109 then
+                l_Background_0.AfterTax.Value.Text = "-";
+                return;
+            else
+                l_Background_0.AfterTax.Value.Text = v15.CalculatePostTaxPrice(v109);
+                return;
+            end;
+        end);
+        l_Background_0.Button.Activated:Connect(function() --[[ Line: 450 ]]
+            -- upvalues: v29 (ref), l_Background_0 (ref), v16 (ref), v17 (ref), l_Sounds_0 (ref), v15 (ref), v27 (ref)
+            local v110 = false;
+            if not v29 then
+                return;
+            elseif l_Background_0.Button.TextLabel.Text == "" then
+                return;
+            else
+                local v111 = tonumber(l_Background_0.EnterTokenAmount.TextBox.Text);
+                if not v111 and l_Background_0.Button.TextLabel.Text == "Sell" then
+                    v16.Message("Invalid Price!");
+                    return;
+                elseif l_Background_0.Button.TextLabel.Text == "Sell" and v111 <= 0 then
+                    v16.Message("Invalid Price!");
+                    return;
+                elseif not v17:RequestUnlock() then
+                    v16.Message("You need to unlock your pin!", l_Sounds_0.error);
+                    return;
+                elseif l_Background_0.Button.TextLabel.Text == "Sell" then
+                    l_Background_0.Button.TextLabel.Text = "Take Off";
+                    local v112, v113 = v15.Remotes.CreateSaleListing:InvokeServer("Booth", v29.itemType, v29.uuid, v111);
+                    if not v112 then
+                        v16.Message(v113);
+                        l_Background_0.Button.TextLabel.Text = "Sell";
+                        return;
+                    else
+                        v16.Message("This item is now selling!");
+                        return;
+                    end;
+                else
+                    local l_uuid_0 = v29.uuid;
+                    local v115 = v27:Get("SaleListings.Booth");
+                    local v116;
+                    if not v115 then
+                        v116 = nil;
+                    else
+                        for v117, v118 in v115 do
+                            if v118.ItemId == l_uuid_0 then
+                                v116 = v117;
+                                v110 = true;
+                            end;
+                            if v110 then
+                                break;
+                            end;
+                        end;
+                        if not v110 then
+                            v116 = nil;
+                        end;
+                    end;
+                    v110 = false;
+                    if not v116 then
+                        v16.Message("This item is NO longer selling!");
+                        return;
+                    else
+                        l_Background_0.Button.TextLabel.Text = "Sell";
+                        l_uuid_0, v115 = v15.Remotes.DeleteSaleListing:InvokeServer("Booth", v116);
+                        if not l_uuid_0 then
+                            v16.Message(v115);
+                            l_Background_0.Button.TextLabel.Text = "Take Off";
+                            return;
+                        else
+                            v16.Message("This item is NO longer selling!");
+                            return;
+                        end;
+                    end;
+                end;
+            end;
+        end);
+        local v119 = require("../Phone/SettingsController/HideUI");
+        local v120 = require(l_Modules_0.Satchel);
+        l_BoothAddItems_0:GetPropertyChangedSignal("Enabled"):Connect(function() --[[ Line: 510 ]]
+            -- upvalues: l_BoothAddItems_0 (ref), v119 (copy), v27 (ref), v120 (copy)
+            if not l_BoothAddItems_0.Enabled then
+                v119:Set(v27:Get("Settings.HideUI"));
+                v120:SetBackpackEnabled(true);
+                return;
+            else
+                v119:Set(false);
+                v120:SetBackpackEnabled(false);
+                return;
+            end;
+        end);
+        l_bars_0.EditBoothBtn.Activated:Connect(function() --[[ Line: 520 ]]
+            -- upvalues: v20 (ref), l_BoothAddItems_0 (ref)
+            v20:ToggleGui(l_BoothAddItems_0.Name);
+        end);
+        v9:RemoteEvent("Booths/OnBoothChanged").OnClientEvent:Connect(function(v121) --[[ Line: 524 ]]
+            -- upvalues: l_bars_0 (ref)
+            l_bars_0.EditBoothBtn.Visible = v121;
+        end);
+        l_Main_0.Main.CloseButton.Activated:Connect(function() --[[ Line: 528 ]]
+            -- upvalues: v20 (ref), l_BoothAddItems_0 (ref)
+            v20:Close(l_BoothAddItems_0.Name);
+        end);
+        l_Main_0.SearchItem.TextBox:GetPropertyChangedSignal("Text"):Connect(function() --[[ Line: 532 ]]
+            -- upvalues: l_Main_0 (ref), v107 (ref), v30 (ref)
+            local v122 = string.lower(l_Main_0.SearchItem.TextBox.Text);
+            if v122 == "" then
+                v107();
+                return;
+            else
+                for _, v124 in l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame:GetChildren() do
+                    if v124:IsA("GuiButton") then
+                        if v30 ~= "" and v124:GetAttribute("FilterType") ~= v30 then
+                            v124.Visible = false;
+                        elseif not string.find(string.lower(v124.SkinName.Text), v122) then
+                            v124.Visible = false;
+                        else
+                            v124.Visible = true;
+                        end;
+                    end;
+                end;
+                return;
+            end;
+        end);
+        v107();
+        v15.Remotes.SaleListingSold.OnClientEvent:Connect(function(v125, _, _, _, v129, v130) --[[ Line: 560 ]]
+            -- upvalues: v16 (ref), l_ReplicatedStorage_0 (ref)
+            v16.Message(("You sold %* to %* for %* tokens!"):format(v129.Name, v125.DisplayName, v130), l_ReplicatedStorage_0.Sounds.money, 10);
+        end);
+        local v131 = {};
+        local function v141(v132) --[[ Line: 566 ]] --[[ Name: ListenTradeLock ]]
+            -- upvalues: v131 (copy)
+            local l_Locked_0 = v132:FindFirstChild("Locked");
+            if l_Locked_0 then
+                l_Locked_0.Visible = false;
+            end;
+            local l_v132_Attribute_0 = v132:GetAttribute("TradeLockType");
+            if not v132:GetAttribute("TradeLockType") then
+                return;
+            else
+                if l_v132_Attribute_0 == "Timestamp" then
+                    local l_Locked_1 = v132:FindFirstChild("Locked");
+                    if l_Locked_1 then
+                        l_Locked_1.Visible = true;
+                    end;
+                    local l_v132_Attribute_1 = v132:GetAttribute("TradeLock");
+                    if l_v132_Attribute_1 then
+                        local v137 = math.max(0, l_v132_Attribute_1 - os.time());
+                        if v137 > 0 then
+                            v131[v132]:Add(task.delay(v137, function() --[[ Line: 585 ]]
+                                -- upvalues: v132 (copy)
+                                if not v132 then
+                                    return;
+                                else
+                                    local l_Locked_2 = v132:FindFirstChild("Locked");
+                                    if l_Locked_2 then
+                                        l_Locked_2.Visible = false;
+                                    end;
+                                    return;
+                                end;
+                            end));
+                            return;
+                        else
+                            local l_Locked_3 = v132:FindFirstChild("Locked");
+                            if l_Locked_3 then
+                                l_Locked_3.Visible = false;
+                                return;
+                            end;
+                        end;
+                    end;
+                else
+                    local l_Locked_4 = v132:FindFirstChild("Locked");
+                    if l_Locked_4 then
+                        l_Locked_4.Visible = true;
+                    end;
+                end;
+                return;
+            end;
+        end;
+        local function v143(v142) --[[ Line: 609 ]] --[[ Name: ListenAttributes ]]
+            -- upvalues: v131 (copy), v7 (ref), v141 (copy)
+            if not v131[v142] then
+                v131[v142] = v7.new();
+                v131[v142]:Add(v142:GetAttributeChangedSignal("TradeLock"):Connect(function() --[[ Line: 613 ]]
+                    -- upvalues: v141 (ref), v142 (copy)
+                    v141(v142);
+                end));
+                v131[v142]:Add(v142:GetAttributeChangedSignal("TradeLockType"):Connect(function() --[[ Line: 616 ]]
+                    -- upvalues: v141 (ref), v142 (copy)
+                    v141(v142);
+                end));
+            end;
+            v141(v142);
+        end;
+        for _, v145 in l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame:GetChildren() do
+            if v145:IsA("ImageButton") then
+                v143(v145);
+            end;
+        end;
+        l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame.ChildAdded:Connect(function(v146) --[[ Line: 630 ]]
+            -- upvalues: v143 (copy)
+            if v146:IsA("ImageButton") then
+                v143(v146);
+            end;
+        end);
+        l_Main_0.Main.YourItems.ItemDisplay.ScrollingFrame.ChildRemoved:Connect(function(v147) --[[ Line: 636 ]]
+            -- upvalues: v131 (copy)
+            if v131[v147] then
+                v131[v147]:Destroy();
+                v131[v147] = nil;
+            end;
+        end);
+    end, 
+    SetWeapons = function(_) --[[ Line: 647 ]] --[[ Name: SetWeapons ]]
+        -- upvalues: v27 (ref), v73 (copy), v12 (copy), v28 (copy)
+        for v149, v150 in (v27:Get("NewInventory.Items.Weapon")) do
+            v73(v149, v150);
+        end;
+        v12.Client:OnItemAdded("Weapon", function(v151) --[[ Line: 653 ]]
+            -- upvalues: v73 (ref)
+            if not v151.Id then
+                return;
+            else
+                v73(v151.Id, {
+                    Name = v151.Name
+                });
+                return;
+            end;
+        end);
+        v12.Client:OnItemRemoved("Weapon", function(v152) --[[ Line: 662 ]]
+            -- upvalues: v28 (ref)
+            if not v152.Id or not v28[v152.Id] then
+                return;
+            else
+                v28[v152.Id]:Destroy();
+                return;
+            end;
+        end);
+    end, 
+    SetFinishers = function(_) --[[ Line: 671 ]] --[[ Name: SetFinishers ]]
+        -- upvalues: v27 (ref), v87 (copy), v12 (copy), v28 (copy)
+        for v154, v155 in (v27:Get("NewInventory.Items.Finisher")) do
+            v87(v154, v155);
+        end;
+        v12.Client:OnItemAdded("Finisher", function(v156) --[[ Line: 677 ]]
+            -- upvalues: v87 (ref)
+            if not v156.Id then
+                return;
+            else
+                v87(v156.Id, {
+                    Name = v156.Name
+                });
+                return;
+            end;
+        end);
+        v12.Client:OnItemRemoved("Finisher", function(v157) --[[ Line: 686 ]]
+            -- upvalues: v28 (ref)
+            if not v157.Id or not v28[v157.Id] then
+                return;
+            else
+                v28[v157.Id]:Destroy();
+                return;
+            end;
+        end);
+    end, 
+    SetWeaponSkins = function(_) --[[ Line: 695 ]] --[[ Name: SetWeaponSkins ]]
+        -- upvalues: v27 (ref), v101 (copy), v12 (copy), v28 (copy)
+        for v159, v160 in (v27:Get("NewInventory.Items.WeaponSkin")) do
+            v101(v159, v160);
+        end;
+        v12.Client:OnItemAdded("WeaponSkin", function(v161) --[[ Line: 701 ]]
+            -- upvalues: v101 (ref)
+            if not v161.Id then
+                return;
+            else
+                v101(v161.Id, {
+                    Name = v161.Name
+                });
+                return;
+            end;
+        end);
+        v12.Client:OnItemRemoved("WeaponSkin", function(v162) --[[ Line: 710 ]]
+            -- upvalues: v28 (ref)
+            if not v162.Id or not v28[v162.Id] then
+                return;
+            else
+                v28[v162.Id]:Destroy();
+                return;
+            end;
+        end);
+    end, 
+    SetCategories = function(_) --[[ Line: 719 ]] --[[ Name: SetCategories ]]
+        -- upvalues: l_Main_0 (copy), v30 (ref), v107 (copy)
+        for _, v165 in l_Main_0.Categories.Buttons:GetChildren() do
+            if v165:IsA("GuiButton") then
+                if v165.Name == "All" then
+                    v165.Activated:Connect(function() --[[ Line: 726 ]]
+                        -- upvalues: v30 (ref), v107 (ref)
+                        v30 = "";
+                        v107();
+                    end);
+                else
+                    v165.Activated:Connect(function() --[[ Line: 733 ]]
+                        -- upvalues: v30 (ref), v165 (copy), v107 (ref)
+                        v30 = v165.Name;
+                        v107();
+                    end);
+                end;
+            end;
+        end;
+    end
+};
