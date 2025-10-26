@@ -1,0 +1,969 @@
+-- Saved by UniversalSynSaveInstance (Join to Copy Games) https://discord.gg/wx4ThpAsmw
+
+local l_ReplicatedStorage_0 = game:GetService("ReplicatedStorage");
+local l_Players_0 = game:GetService("Players");
+local l_RunService_0 = game:GetService("RunService");
+local _ = game:GetService("StarterGui");
+local l_UserInputService_0 = game:GetService("UserInputService");
+local l_GuiService_0 = game:GetService("GuiService");
+local l_CollectionService_0 = game:GetService("CollectionService");
+local l_Modules_0 = l_ReplicatedStorage_0:WaitForChild("Modules");
+local _ = require(l_Modules_0.Net);
+local v9 = require(l_Modules_0.Replion);
+local v10 = require(l_Modules_0.Trading.TradeData);
+local v11 = require(l_Modules_0.Trove);
+local v12 = require(l_Modules_0.Message);
+local v13 = require(l_Modules_0.Utils);
+local v14 = require(l_ReplicatedStorage_0.Modules.Inventory.Client);
+local _ = require(l_ReplicatedStorage_0.Modules.Inventory.InventoryTypes);
+local v16 = require(l_ReplicatedStorage_0.SkinCrates.Items);
+local v17 = require(l_ReplicatedStorage_0.Shared.Weapons);
+local v18 = require("../Phone/SettingsController/HideUI");
+local v19 = require(l_Modules_0.Satchel);
+local v20 = require("./RAPController");
+local v21 = require("../GuiController");
+local l_LocalPlayer_0 = l_Players_0.LocalPlayer;
+local v23 = v9.Client:WaitReplion("Data");
+local l_PlayerGui_0 = l_LocalPlayer_0:WaitForChild("PlayerGui");
+local l_GeneralGUI_0 = l_PlayerGui_0:WaitForChild("GeneralGUI");
+local l_Tooltip_0 = l_PlayerGui_0:WaitForChild("Tooltip").Tooltip;
+local l_Trading_0 = l_PlayerGui_0:WaitForChild("Trading");
+local _ = l_Trading_0.Frame.Categories;
+local l_Main_0 = l_Trading_0.Frame.Main;
+local l_RaritiesTemplates_0 = l_Main_0.RaritiesTemplates;
+l_RaritiesTemplates_0.Parent = nil;
+local v31 = v11.new();
+local _ = v31:Extend();
+local l_TradeStarted_0 = v10.Remotes.TradeStarted;
+local l_TradeEnded_0 = v10.Remotes.TradeEnded;
+local l_TradeCompleted_0 = v10.Remotes.TradeCompleted;
+local l_CancelTrade_0 = v10.Remotes.CancelTrade;
+local l_SetTokens_0 = v10.Remotes.SetTokens;
+local l_ConfirmTrade_0 = v10.Remotes.ConfirmTrade;
+local l_SetReady_0 = v10.Remotes.SetReady;
+local l_message_0 = l_ReplicatedStorage_0:WaitForChild("Gift"):WaitForChild("Sounds").message;
+local v41 = {};
+local v42 = {};
+local v43 = {};
+local v44 = {
+    ["rbxassetid://18540991030"] = "BASIC", 
+    ["rbxassetid://18540997794"] = "EPIC", 
+    ["rbxassetid://18541001909"] = "LEGEND", 
+    ["rbxassetid://18540994717"] = "RARE"
+};
+local v45 = {
+    ["rbxassetid://18540991030"] = Color3.fromRGB(0, 174, 255), 
+    ["rbxassetid://18540997794"] = Color3.fromRGB(193, 0, 250), 
+    ["rbxassetid://18541001909"] = Color3.fromRGB(255, 255, 255), 
+    ["rbxassetid://18540994717"] = Color3.fromRGB(208, 0, 0)
+};
+local v46 = {};
+local v47 = "All";
+local function _(v48) --[[ Line: 104 ]] --[[ Name: isTradeable ]]
+    local l_TradeLock_0 = v48.TradeLock;
+    if not l_TradeLock_0 then
+        return true;
+    elseif l_TradeLock_0.Type == "Untradable" then
+        return false;
+    elseif l_TradeLock_0.Type == "Timestamp" then
+        return l_TradeLock_0.Time > os.time();
+    else
+        return true;
+    end;
+end;
+local function _(v51) --[[ Line: 117 ]] --[[ Name: getTradeLockKey ]]
+    if not v51 then
+        return "None";
+    elseif v51.Type == "Untradable" then
+        return "Untradable";
+    elseif v51.Type == "Timestamp" then
+        return (("Timestamp:%*"):format(v51.Time));
+    else
+        return "Unknown";
+    end;
+end;
+local function v59() --[[ Line: 130 ]] --[[ Name: UpdateVisiblity ]]
+    -- upvalues: l_Trading_0 (copy), l_Main_0 (copy), v47 (ref)
+    local l_TextBox_0 = l_Trading_0.Frame.Categories.SearchItem.TextBox;
+    local v54 = string.lower(l_TextBox_0.Text);
+    for _, v56 in l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:GetChildren() do
+        if v56:IsA("ImageButton") then
+            local l_v56_Attribute_0 = v56:GetAttribute("Filter");
+            if l_v56_Attribute_0 and not v56.Checkmark.Visible then
+                local v58 = true;
+                if v54 ~= "" and not string.find(string.lower(v56.Name), v54) then
+                    v58 = false;
+                end;
+                if v47 ~= "All" and l_v56_Attribute_0 ~= v47 then
+                    v58 = false;
+                end;
+                v56.Visible = v58;
+            end;
+        end;
+    end;
+end;
+v46.Start = function(v60) --[[ Line: 158 ]] --[[ Name: Start ]]
+    -- upvalues: l_TradeStarted_0 (copy), l_TradeEnded_0 (copy), v31 (copy), l_Trading_0 (copy), v12 (copy), l_message_0 (copy), v18 (copy), v23 (copy), v19 (copy), l_TradeCompleted_0 (copy), l_RunService_0 (copy), l_UserInputService_0 (copy), l_PlayerGui_0 (copy), l_GuiService_0 (copy), v43 (copy), l_Tooltip_0 (copy), v20 (copy), v44 (copy), v45 (copy), v13 (copy), l_CollectionService_0 (copy), v11 (copy), l_Main_0 (copy), l_GeneralGUI_0 (copy)
+    l_TradeStarted_0.OnClientEvent:Connect(function(v61) --[[ Line: 159 ]]
+        -- upvalues: v60 (copy)
+        v60:TradeStarted(v61);
+    end);
+    l_TradeEnded_0.OnClientEvent:Connect(function(v62) --[[ Line: 163 ]]
+        -- upvalues: v31 (ref), l_Trading_0 (ref), v12 (ref), l_message_0 (ref), v18 (ref), v23 (ref), v19 (ref)
+        v31:Clean();
+        l_Trading_0.Enabled = false;
+        v12.Message(v62, l_message_0);
+        v18:Set(v23:Get("Settings.HideUI"));
+        v19:SetBackpackEnabled(true);
+    end);
+    l_TradeCompleted_0.OnClientEvent:Connect(function(_, v64) --[[ Line: 171 ]]
+        -- upvalues: v31 (ref), l_Trading_0 (ref), v12 (ref), l_message_0 (ref), v18 (ref), v23 (ref), v19 (ref)
+        v31:Clean();
+        l_Trading_0.Enabled = false;
+        v12.Message(v64, l_message_0);
+        v18:Set(v23:Get("Settings.HideUI"));
+        v19:SetBackpackEnabled(true);
+    end);
+    local v65 = nil;
+    l_RunService_0.PostSimulation:Connect(function() --[[ Line: 181 ]]
+        -- upvalues: l_UserInputService_0 (ref), l_PlayerGui_0 (ref), l_GuiService_0 (ref), v43 (ref), l_Tooltip_0 (ref), v65 (ref), v20 (ref), v44 (ref), v45 (ref), v13 (ref)
+        local l_l_UserInputService_0_MouseLocation_0 = l_UserInputService_0:GetMouseLocation();
+        local l_l_PlayerGui_0_GuiObjectsAtPosition_0 = l_PlayerGui_0:GetGuiObjectsAtPosition(l_l_UserInputService_0_MouseLocation_0.X, l_l_UserInputService_0_MouseLocation_0.Y - l_GuiService_0.TopbarInset.Height);
+        local v68 = nil;
+        for _, v70 in ipairs(l_l_PlayerGui_0_GuiObjectsAtPosition_0) do
+            if v43[v70] then
+                v68 = v70;
+                break;
+            end;
+        end;
+        if not v68 then
+            l_Tooltip_0.Visible = false;
+            v65 = nil;
+            return;
+        else
+            if v68 and v65 ~= v68 then
+                v65 = v68;
+                local l_Image_0 = v65.Image;
+                local l_v65_0 = v65;
+                local l_l_v65_0_Attribute_0 = l_v65_0:GetAttribute("TradeLock");
+                local l_l_v65_0_Attribute_1 = l_v65_0:GetAttribute("ItemType");
+                local l_l_v65_0_Attribute_2 = l_v65_0:GetAttribute("ItemSubType");
+                local l_l_v65_0_Attribute_3 = l_v65_0:GetAttribute("ItemName");
+                local l_v20_RAP_0 = v20:GetRAP(l_l_v65_0_Attribute_1, l_l_v65_0_Attribute_2, l_l_v65_0_Attribute_3);
+                l_v65_0:SetAttribute("LastRapUpdated", DateTime.now().UnixTimestamp);
+                l_Tooltip_0.Rarity.Text = v44[l_Image_0];
+                l_Tooltip_0.Rarity.TextColor3 = v45[l_Image_0];
+                l_Tooltip_0.Rarity.Legend.Enabled = v44[l_Image_0] == "LEGEND";
+                l_Tooltip_0.ItemName.Text = l_v65_0.SkinName.Text;
+                do
+                    local l_l_v20_RAP_0_0 = l_v20_RAP_0;
+                    if not l_l_v20_RAP_0_0 or DateTime.now().UnixTimestamp > l_v65_0:GetAttribute("LastRapUpdated") + 600 then
+                        task.spawn(function() --[[ Line: 221 ]]
+                            -- upvalues: l_Tooltip_0 (ref), l_l_v20_RAP_0_0 (ref), l_v65_0 (copy), v20 (ref), l_l_v65_0_Attribute_1 (copy), l_l_v65_0_Attribute_2 (copy), l_l_v65_0_Attribute_3 (copy), v65 (ref)
+                            l_Tooltip_0.RAPAmount.Icon.Value.Text = l_l_v20_RAP_0_0 or "?";
+                            l_v65_0:SetAttribute("LastRapUpdated", DateTime.now().UnixTimestamp);
+                            l_l_v20_RAP_0_0 = v20:GetRAPAsync(l_l_v65_0_Attribute_1, l_l_v65_0_Attribute_2, l_l_v65_0_Attribute_3);
+                            if l_v65_0 == v65 then
+                                l_Tooltip_0.RAPAmount.Icon.Value.Text = l_l_v20_RAP_0_0 or "?";
+                            end;
+                        end);
+                    else
+                        l_Tooltip_0.RAPAmount.Icon.Value.Text = l_l_v20_RAP_0_0 or "?";
+                    end;
+                    if l_l_v65_0_Attribute_0 then
+                        while l_v65_0 == v65 and l_v65_0.Parent and workspace:GetServerTimeNow() < l_l_v65_0_Attribute_0 do
+                            l_Tooltip_0.ItemTradeable.Text = ("Untradable (%*)"):format((v13.ConvertTime(l_l_v65_0_Attribute_0 - workspace:GetServerTimeNow(), false)));
+                            task.wait(1);
+                        end;
+                        if l_v65_0 == v65 then
+                            l_Tooltip_0.ItemTradeable.Text = "";
+                        end;
+                    else
+                        l_Tooltip_0.ItemTradeable.Text = "";
+                    end;
+                end;
+            end;
+            l_Tooltip_0.Visible = true;
+            l_Tooltip_0.Position = UDim2.fromOffset(l_l_UserInputService_0_MouseLocation_0.X + 10, l_l_UserInputService_0_MouseLocation_0.Y + 20 - l_GuiService_0.TopbarInset.Height);
+            return;
+        end;
+    end);
+    for _, v80 in l_CollectionService_0:GetTagged("RapInfoButton") do
+        v43[v80] = true;
+    end;
+    l_CollectionService_0:GetInstanceAddedSignal("RapInfoButton"):Connect(function(v81) --[[ Line: 259 ]]
+        -- upvalues: v43 (ref)
+        v43[v81] = true;
+    end);
+    l_CollectionService_0:GetInstanceRemovedSignal("RapInfoButton"):Connect(function(v82) --[[ Line: 262 ]]
+        -- upvalues: v43 (ref)
+        v43[v82] = nil;
+    end);
+    local v83 = {};
+    local function v93(v84) --[[ Line: 271 ]] --[[ Name: ListenTradeLock ]]
+        -- upvalues: v83 (copy)
+        local l_Locked_0 = v84:FindFirstChild("Locked");
+        if l_Locked_0 then
+            l_Locked_0.Visible = false;
+        end;
+        local l_v84_Attribute_0 = v84:GetAttribute("TradeLockType");
+        if not v84:GetAttribute("TradeLockType") then
+            return;
+        else
+            if l_v84_Attribute_0 == "Timestamp" then
+                local l_Locked_1 = v84:FindFirstChild("Locked");
+                if l_Locked_1 then
+                    l_Locked_1.Visible = true;
+                end;
+                local l_v84_Attribute_1 = v84:GetAttribute("TradeLock");
+                if l_v84_Attribute_1 then
+                    local v89 = math.max(0, l_v84_Attribute_1 - os.time());
+                    if v89 > 0 then
+                        v83[v84]:Add(task.delay(v89, function() --[[ Line: 290 ]]
+                            -- upvalues: v84 (copy)
+                            if not v84 then
+                                return;
+                            else
+                                local l_Locked_2 = v84:FindFirstChild("Locked");
+                                if l_Locked_2 then
+                                    l_Locked_2.Visible = false;
+                                end;
+                                return;
+                            end;
+                        end));
+                        return;
+                    else
+                        local l_Locked_3 = v84:FindFirstChild("Locked");
+                        if l_Locked_3 then
+                            l_Locked_3.Visible = false;
+                            return;
+                        end;
+                    end;
+                end;
+            else
+                local l_Locked_4 = v84:FindFirstChild("Locked");
+                if l_Locked_4 then
+                    l_Locked_4.Visible = true;
+                end;
+            end;
+            return;
+        end;
+    end;
+    local function v95(v94) --[[ Line: 314 ]] --[[ Name: ListenAttributes ]]
+        -- upvalues: v83 (copy), v11 (ref), v93 (copy)
+        if not v83[v94] then
+            v83[v94] = v11.new();
+            v83[v94]:Add(v94:GetAttributeChangedSignal("TradeLock"):Connect(function() --[[ Line: 318 ]]
+                -- upvalues: v93 (ref), v94 (copy)
+                v93(v94);
+            end));
+            v83[v94]:Add(v94:GetAttributeChangedSignal("TradeLockType"):Connect(function() --[[ Line: 321 ]]
+                -- upvalues: v93 (ref), v94 (copy)
+                v93(v94);
+            end));
+        end;
+        v93(v94);
+    end;
+    for _, v97 in l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame:GetChildren() do
+        if v97:IsA("ImageButton") then
+            v95(v97);
+        end;
+    end;
+    l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame.ChildAdded:Connect(function(v98) --[[ Line: 335 ]]
+        -- upvalues: v95 (copy)
+        if v98:IsA("ImageButton") then
+            v95(v98);
+        end;
+    end);
+    l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame.ChildRemoved:Connect(function(v99) --[[ Line: 341 ]]
+        -- upvalues: v83 (copy)
+        if v83[v99] then
+            v83[v99]:Destroy();
+            v83[v99] = nil;
+        end;
+    end);
+    for _, v101 in l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:GetChildren() do
+        if v101:IsA("ImageButton") then
+            v95(v101);
+        end;
+    end;
+    l_Main_0.YourOffer.ItemDisplay.ScrollingFrame.ChildAdded:Connect(function(v102) --[[ Line: 354 ]]
+        -- upvalues: v95 (copy)
+        if v102:IsA("ImageButton") then
+            v95(v102);
+        end;
+    end);
+    l_Main_0.YourOffer.ItemDisplay.ScrollingFrame.ChildRemoved:Connect(function(v103) --[[ Line: 360 ]]
+        -- upvalues: v83 (copy)
+        if v83[v103] then
+            v83[v103]:Destroy();
+            v83[v103] = nil;
+        end;
+    end);
+    l_Trading_0:GetPropertyChangedSignal("Enabled"):Connect(function() --[[ Line: 367 ]]
+        -- upvalues: l_GeneralGUI_0 (ref), l_Trading_0 (ref)
+        l_GeneralGUI_0.Enabled = not l_Trading_0.Enabled;
+    end);
+end;
+v46.UpdateInventory = function(_, v105) --[[ Line: 372 ]] --[[ Name: UpdateInventory ]]
+    -- upvalues: v14 (copy), l_LocalPlayer_0 (copy), l_RaritiesTemplates_0 (copy), v17 (copy), l_Trading_0 (copy), v47 (ref), l_Main_0 (copy), v12 (copy), v10 (copy), v41 (copy), v31 (copy), v42 (copy), v46 (copy), v16 (copy)
+    local function v108(v106, v107) --[[ Line: 373 ]] --[[ Name: GetOwnedGUIDs ]]
+        -- upvalues: v14 (ref)
+        if v107 == "Finisher" then
+            return v14:FindItems("Finisher", v106.Name, nil);
+        elseif v107 == "WeaponSkin" then
+            return v14:FindItems("WeaponSkin", v106.Name, {
+                Type = v106.Type
+            });
+        elseif v107 == "Weapon" then
+            return v14:FindItems("Weapon", v106.Name, nil);
+        else
+            return;
+        end;
+    end;
+    local function _(v109, v110) --[[ Line: 383 ]] --[[ Name: GetEquippedGUIDs ]]
+        -- upvalues: v14 (ref)
+        if v110 == "Finisher" then
+            return v14:GetEquipped("Finisher");
+        elseif v110 == "WeaponSkin" then
+            return v14:GetEquipped("WeaponSkin", v109.Type);
+        elseif v110 == "Weapon" then
+            return v14:GetEquipped("Weapon", v109.Name);
+        else
+            return;
+        end;
+    end;
+    local function v126(v112, v113, v114) --[[ Line: 393 ]] --[[ Name: GetPreferredGUID ]]
+        -- upvalues: v105 (copy), l_LocalPlayer_0 (ref), v108 (copy), v14 (ref)
+        local v115 = v105:Get((("Players.%*.Items.%*"):format(l_LocalPlayer_0.UserId, v113))) or {};
+        local v116 = v108(v112, v113);
+        if v116 then
+            local v117 = {};
+            for _, v119 in v116 do
+                local l_v14_Item_0 = v14:GetItem(v113, v119);
+                if l_v14_Item_0 then
+                    local l_TradeLock_1 = l_v14_Item_0.TradeLock;
+                    if (not l_TradeLock_1 and "None" or l_TradeLock_1.Type == "Untradable" and "Untradable" or if l_TradeLock_1.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_1.Time) else "Unknown") == v114 and not v115[v119] then
+                        table.insert(v117, v119);
+                    end;
+                end;
+            end;
+            if #v117 > 1 then
+                local v122 = if v113 == "Finisher" then v14:GetEquipped("Finisher") else if v113 == "WeaponSkin" then v14:GetEquipped("WeaponSkin", v112.Type) else if v113 == "Weapon" then v14:GetEquipped("Weapon", v112.Name) else nil;
+                if v122 then
+                    for _, v124 in v122 do
+                        if v124.Id then
+                            local v125 = table.find(v117, v124.Id);
+                            if v125 then
+                                table.remove(v117, v125);
+                            end;
+                        end;
+                    end;
+                end;
+            end;
+            return v117[1] or nil;
+        else
+            return nil;
+        end;
+    end;
+    local function v180(v127, v128, _, v130, v131) --[[ Line: 429 ]] --[[ Name: UpdateFrame ]]
+        -- upvalues: v105 (copy), l_LocalPlayer_0 (ref), v108 (copy), v14 (ref), l_RaritiesTemplates_0 (ref), v17 (ref), l_Trading_0 (ref), v47 (ref), l_Main_0 (ref), v126 (copy), v12 (ref), v10 (ref), v41 (ref), v31 (ref), v42 (ref), v46 (ref)
+        local v132 = v105:Get((("Players.%*.Items.%*"):format(l_LocalPlayer_0.UserId, v130))) or {};
+        local v133 = v108(v127, v130);
+        if not v133 then
+            return;
+        else
+            local v134 = 0;
+            local v135 = 0;
+            for _, v137 in v133 do
+                local l_v14_Item_1 = v14:GetItem(v130, v137);
+                if l_v14_Item_1 then
+                    local l_TradeLock_2 = l_v14_Item_1.TradeLock;
+                    if (not l_TradeLock_2 and "None" or l_TradeLock_2.Type == "Untradable" and "Untradable" or if l_TradeLock_2.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_2.Time) else "Unknown") == v131 then
+                        if v132[v137] then
+                            v135 = v135 + 1;
+                        else
+                            v134 = v134 + 1;
+                        end;
+                    end;
+                end;
+            end;
+            local v140 = ("%*::%*"):format(v127.Name, v131);
+            local function _(v141, v142, v143) --[[ Line: 450 ]] --[[ Name: UpdateInformation ]]
+                if v141 then
+                    v141.Amount.Text = ("x%*"):format(v142);
+                    v141.Checkmark.Visible = v143;
+                    v141.LayoutOrder = v143 and 0 or 1;
+                end;
+            end;
+            local function v169(v145, v146, v147, v148, v149, v150, v151) --[[ Line: 458 ]] --[[ Name: CreateFrame ]]
+                -- upvalues: l_RaritiesTemplates_0 (ref), v140 (copy), v127 (copy), v130 (copy), v17 (ref), l_Trading_0 (ref), v47 (ref), l_Main_0 (ref), v126 (ref), v131 (copy), v12 (ref), v10 (ref), v105 (ref), l_LocalPlayer_0 (ref), v14 (ref)
+                if not v150 then
+                    warn((("Default data information not found for item called %*"):format(v145)));
+                    return;
+                else
+                    local v152 = "Basic";
+                    if v150 then
+                        v152 = v150.Rarity;
+                    end;
+                    local v153 = l_RaritiesTemplates_0[v152]:Clone();
+                    v153.Name = v140 .. (v148 and "::Offered" or "");
+                    v153:SetAttribute("groupKey", v127.Key);
+                    if v130 == "WeaponSkin" then
+                        v153:SetAttribute("Weapon", v146);
+                    end;
+                    if v151 then
+                        for v154, v155 in v151 do
+                            v153:SetAttribute(v154, v155);
+                        end;
+                    end;
+                    local v156 = "Other";
+                    if v146 then
+                        v156 = v146;
+                    elseif v150 and v150.ClassType == "Finisher" then
+                        v156 = "Finishers";
+                    elseif v17[v127.Name] then
+                        v156 = "Weapons";
+                    end;
+                    v153:SetAttribute("Filter", v156);
+                    local l_TextBox_1 = l_Trading_0.Frame.Categories.SearchItem.TextBox;
+                    local v158 = string.lower(l_TextBox_1.Text);
+                    local v159 = true;
+                    if v158 ~= "" and not string.find(string.lower(v145), v158) then
+                        v159 = false;
+                    end;
+                    if v47 ~= "All" and v156 ~= v47 then
+                        v159 = false;
+                    end;
+                    v153.Icon.Image = v150 and v150.Icon or "";
+                    v153.ItemType.Text = v152;
+                    v153.SkinName.Text = v145;
+                    v153.Amount.Text = ("x%*"):format(v147);
+                    v153.Checkmark.Visible = v148;
+                    v153.LayoutOrder = v148 and 0 or 1;
+                    v153.Parent = l_Main_0.YourOffer.ItemDisplay.ScrollingFrame;
+                    v153.Visible = v159;
+                    v149:Add(v153.MouseButton1Click:Connect(function() --[[ Line: 516 ]]
+                        -- upvalues: v153 (copy), v126 (ref), v127 (ref), v130 (ref), v131 (ref), v12 (ref), v10 (ref), v105 (ref), l_LocalPlayer_0 (ref), v14 (ref)
+                        if not v153.Checkmark.Visible then
+                            local v160 = v126(v127, v130, v131);
+                            if not v160 then
+                                v12.Message("You don't have this item on your inventory anymore", nil, 0.75);
+                            end;
+                            if v160 then
+                                local v161, v162 = v10.Remotes.AddItem:InvokeServer(v130, v160);
+                                v12.Message(v161 and "Item added to offer!" or v162, nil, 0.75);
+                                return;
+                            end;
+                        else
+                            local v163 = v105:Get((("Players.%*.Items.%*"):format(l_LocalPlayer_0.UserId, v130))) or {};
+                            for v164, _ in v163 do
+                                local l_v14_Item_2 = v14:GetItem(v130, v164);
+                                if l_v14_Item_2 and l_v14_Item_2.Name == v127.Name then
+                                    local l_TradeLock_3 = l_v14_Item_2.TradeLock;
+                                    if (not l_TradeLock_3 and "None" or l_TradeLock_3.Type == "Untradable" and "Untradable" or if l_TradeLock_3.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_3.Time) else "Unknown") == v131 then
+                                        local v168;
+                                        v168, l_TradeLock_3 = v10.Remotes.RemoveItem:InvokeServer(v130, v164);
+                                        v12.Message(v168 and "Item removed from offer!" or l_TradeLock_3, nil, 1.75);
+                                        return;
+                                    end;
+                                end;
+                            end;
+                        end;
+                    end));
+                    v149:Add(v153);
+                    return;
+                end;
+            end;
+            if v134 > 0 then
+                local l_FirstChild_0 = l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:FindFirstChild(v140);
+                if l_FirstChild_0 then
+                    local l_v134_0 = v134;
+                    if l_FirstChild_0 then
+                        l_FirstChild_0.Amount.Text = ("x%*"):format(l_v134_0);
+                        l_FirstChild_0.Checkmark.Visible = false;
+                        l_FirstChild_0.LayoutOrder = 1;
+                    end;
+                else
+                    v41[v140] = v31:Extend();
+                    v41[v140]:Add(function() --[[ Line: 550 ]]
+                        -- upvalues: v41 (ref), v140 (copy)
+                        v41[v140] = nil;
+                    end);
+                    local v172 = {
+                        TradeLockType = v127.TradeLock and v127.TradeLock.Type, 
+                        TradeLock = v127.TradeLock and v127.TradeLock.Time or nil, 
+                        ItemType = v127.ItemType or nil, 
+                        ItemSubType = v127.Type or nil, 
+                        ItemName = v127.Name
+                    };
+                    v169(v127.Name, v127.Type, v134, false, v41[v140], v128, v172);
+                end;
+            else
+                if v41[v140] then
+                    v41[v140]:Destroy();
+                    v41[v140] = nil;
+                end;
+                local l_FirstChild_1 = l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:FindFirstChild(v140);
+                if l_FirstChild_1 then
+                    l_FirstChild_1:Destroy();
+                end;
+            end;
+            if v135 > 0 then
+                local v174 = v140 .. "::Offered";
+                local l_FirstChild_2 = l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:FindFirstChild(v174);
+                if l_FirstChild_2 then
+                    local l_v135_0 = v135;
+                    if l_FirstChild_2 then
+                        l_FirstChild_2.Amount.Text = ("x%*"):format(l_v135_0);
+                        l_FirstChild_2.Checkmark.Visible = true;
+                        l_FirstChild_2.LayoutOrder = 0;
+                        return;
+                    end;
+                else
+                    v42[v140] = v31:Extend();
+                    v42[v140]:Add(function() --[[ Line: 582 ]]
+                        -- upvalues: v42 (ref), v140 (copy)
+                        v42[v140] = nil;
+                    end);
+                    local v177 = {
+                        TradeLockType = v127.TradeLock and v127.TradeLock.Type, 
+                        TradeLock = v127.TradeLock and v127.TradeLock.Time or nil, 
+                        ItemType = v127.ItemType or nil, 
+                        ItemSubType = v127.Type or nil, 
+                        ItemName = v127.Name
+                    };
+                    v169(v127.Name, v127.Type, v135, true, v42[v140], v128, v177);
+                    if v177.TradeLock then
+                        local v178 = math.max(0, v177.TradeLock - os.time());
+                        if v178 > 0 then
+                            v42[v140]:Add(task.delay(v178, function() --[[ Line: 599 ]]
+                                -- upvalues: v46 (ref), v105 (ref)
+                                v46:UpdateInventory(v105);
+                            end));
+                            return;
+                        end;
+                    end;
+                end;
+            else
+                if v42[v140] then
+                    v42[v140]:Destroy();
+                    v42[v140] = nil;
+                end;
+                local l_FirstChild_3 = l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:FindFirstChild(v140 .. "::Offered");
+                if l_FirstChild_3 then
+                    l_FirstChild_3:Destroy();
+                end;
+            end;
+            return;
+        end;
+    end;
+    local v181 = v14:Get();
+    if not v181 then
+        return;
+    else
+        local function v197(v182, v183) --[[ Line: 624 ]] --[[ Name: groupItems ]]
+            -- upvalues: v16 (ref), v17 (ref), v180 (copy)
+            local v184 = {};
+            for v185, v186 in v183 do
+                local l_TradeLock_4 = v186.TradeLock;
+                local v188 = not l_TradeLock_4 and "None" or l_TradeLock_4.Type == "Untradable" and "Untradable" or if l_TradeLock_4.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_4.Time) else "Unknown";
+                l_TradeLock_4 = ("%*::%*"):format(v186.Name, v188);
+                v184[l_TradeLock_4] = v184[l_TradeLock_4] or {
+                    Name = v186.Name, 
+                    GUIDs = {}, 
+                    TradeLock = v186.TradeLock, 
+                    DefaultData = v182 ~= "Weapon" and v16[v186.Name] or v17[v186.Name], 
+                    ItemType = v182, 
+                    Type = v182 == "WeaponSkin" and v186.Type or nil
+                };
+                table.insert(v184[l_TradeLock_4].GUIDs, v185);
+            end;
+            for v189, v190 in v184 do
+                local l_v180_0 = v180;
+                local v192 = {
+                    Key = v189, 
+                    Name = v190.Name, 
+                    Type = v190.Type, 
+                    ItemType = v190.ItemType, 
+                    TradeLock = v190.TradeLock
+                };
+                local l_DefaultData_0 = v190.DefaultData;
+                local v194 = v190.GUIDs[1];
+                local l_ItemType_0 = v190.ItemType;
+                local l_TradeLock_5 = v190.TradeLock;
+                l_v180_0(v192, l_DefaultData_0, v194, l_ItemType_0, not l_TradeLock_5 and "None" or l_TradeLock_5.Type == "Untradable" and "Untradable" or if l_TradeLock_5.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_5.Time) else "Unknown");
+            end;
+            return v184;
+        end;
+        local v198 = {};
+        if v181.Items.Finisher then
+            table.insert(v198, (v197("Finisher", v181.Items.Finisher)));
+        end;
+        if v181.Items.WeaponSkin then
+            table.insert(v198, (v197("WeaponSkin", v181.Items.WeaponSkin)));
+        end;
+        if v181.Items.Weapon then
+            table.insert(v198, (v197("Weapon", v181.Items.Weapon)));
+        end;
+        local _ = function(v199) --[[ Line: 669 ]] --[[ Name: IsInSomeGroup ]]
+            -- upvalues: v198 (copy)
+            local v200 = false;
+            for _, v202 in v198 do
+                if v202[v199] then
+                    return true;
+                end;
+            end;
+            return v200;
+        end;
+        for _, v205 in l_Main_0.YourOffer.ItemDisplay.ScrollingFrame:GetChildren() do
+            if v205:IsA("ImageButton") and v205:GetAttribute("groupKey") then
+                local l_v205_Attribute_0 = v205:GetAttribute("groupKey");
+                local v207 = false;
+                for _, v209 in v198 do
+                    if v209[l_v205_Attribute_0] then
+                        v207 = true;
+                        break;
+                    end;
+                end;
+                if not v207 then
+                    v205:Destroy();
+                    if v41[v205:GetAttribute("groupKey")] then
+                        v41[v205:GetAttribute("groupKey")]:Destroy();
+                    end;
+                    if v42[v205:GetAttribute("groupKey")] then
+                        v42[v205:GetAttribute("groupKey")]:Destroy();
+                    end;
+                end;
+            end;
+        end;
+        return;
+    end;
+end;
+v46.UpdateOtherOffers = function(_, v211, v212) --[[ Line: 699 ]] --[[ Name: UpdateOtherOffers ]]
+    -- upvalues: v16 (copy), v17 (copy), l_RaritiesTemplates_0 (copy), l_Main_0 (copy), v31 (copy)
+    local v213 = v212:Get((("Players.%*.Items.Finisher"):format(v211.UserId))) or {};
+    local v214 = v212:Get((("Players.%*.Items.WeaponSkin"):format(v211.UserId))) or {};
+    local v215 = v212:Get((("Players.%*.Items.Weapon"):format(v211.UserId))) or {};
+    local v216 = {};
+    local function v223(v217, _, v219) --[[ Line: 709 ]] --[[ Name: addToGroup ]]
+        -- upvalues: v216 (copy), v16 (ref), v17 (ref)
+        local l_TradeLock_6 = v219.TradeLock;
+        local v221 = not l_TradeLock_6 and "None" or l_TradeLock_6.Type == "Untradable" and "Untradable" or if l_TradeLock_6.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_6.Time) else "Unknown";
+        l_TradeLock_6 = ("%*::%*"):format(v219.Name, v221);
+        v216[l_TradeLock_6] = v216[l_TradeLock_6] or {
+            Name = v219.Name, 
+            TradeLock = v219.TradeLock, 
+            ItemType = v217, 
+            Type = v217 == "WeaponSkin" and v219.Type or nil, 
+            DefaultData = v217 ~= "Weapon" and v16[v219.Name] or v17[v219.Name], 
+            Count = 0
+        };
+        local v222 = v216[l_TradeLock_6];
+        v222.Count = v222.Count + 1;
+    end;
+    for v224, v225 in v213 do
+        v223("Finisher", v224, v225);
+    end;
+    for v226, v227 in v214 do
+        v223("WeaponSkin", v226, v227);
+    end;
+    for v228, v229 in v215 do
+        v223("Weapon", v228, v229);
+    end;
+    local v230 = {};
+    local function v240(v231, v232) --[[ Line: 739 ]] --[[ Name: CreateFrame ]]
+        -- upvalues: l_RaritiesTemplates_0 (ref), l_Main_0 (ref), v31 (ref)
+        local v233 = v231.DefaultData and v231.DefaultData.Rarity or "Basic";
+        local v234 = l_RaritiesTemplates_0[v233]:Clone();
+        local v235 = "%*::%*";
+        local l_Name_0 = v231.Name;
+        local l_TradeLock_7 = v231.TradeLock;
+        v234.Name = v235:format(l_Name_0, not l_TradeLock_7 and "None" or l_TradeLock_7.Type == "Untradable" and "Untradable" or if l_TradeLock_7.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_7.Time) else "Unknown");
+        v234.Icon.Image = v231.DefaultData and v231.DefaultData.Icon or "";
+        v234.ItemType.Text = v233;
+        v234.SkinName.Text = v231.Name;
+        v234.Amount.Text = ("x%*"):format(v231.Count);
+        v234.Checkmark.Visible = false;
+        v234.Parent = l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame;
+        v234.Visible = true;
+        if v232 then
+            for v238, v239 in v232 do
+                v234:SetAttribute(v238, v239);
+            end;
+        end;
+        v31:Add(v234);
+        return v234;
+    end;
+    for _, v242 in v216 do
+        local v243 = "%*::%*";
+        local l_Name_1 = v242.Name;
+        local l_TradeLock_8 = v242.TradeLock;
+        local v246 = v243:format(l_Name_1, not l_TradeLock_8 and "None" or l_TradeLock_8.Type == "Untradable" and "Untradable" or if l_TradeLock_8.Type == "Timestamp" then ("Timestamp:%*"):format(l_TradeLock_8.Time) else "Unknown");
+        v243 = l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame:FindFirstChild(v246);
+        if v243 then
+            v243.Amount.Text = ("x%*"):format(v242.Count);
+        else
+            v243 = v240(v242, {
+                TradeLockType = v242.TradeLock and v242.TradeLock.Type, 
+                TradeLock = v242.TradeLock and v242.TradeLock.Time or nil, 
+                ItemType = v242.ItemType or nil, 
+                ItemSubType = v242.Type or nil, 
+                ItemName = v242.Name
+            });
+        end;
+        v230[v246] = true;
+    end;
+    for _, v248 in l_Main_0.TheirOffer.ItemDisplay.ScrollingFrame:GetChildren() do
+        if v248:IsA("ImageButton") and not v230[v248.Name] then
+            v248:Destroy();
+        end;
+    end;
+end;
+v46.TradeStarted = function(v249, v250) --[[ Line: 792 ]] --[[ Name: TradeStarted ]]
+    -- upvalues: v31 (copy), v18 (copy), v19 (copy), v9 (copy), l_Trading_0 (copy), v47 (ref), l_LocalPlayer_0 (copy), l_Main_0 (copy), l_CancelTrade_0 (copy), v12 (copy), l_message_0 (copy), v23 (copy), l_ConfirmTrade_0 (copy), l_SetReady_0 (copy), v10 (copy), l_SetTokens_0 (copy), v21 (copy), v59 (copy)
+    v31:Clean();
+    v18:Set(false);
+    v19:SetBackpackEnabled(false);
+    local l_Replion_0 = v9.Client:GetReplion(v250);
+    if not l_Replion_0 then
+        return;
+    else
+        l_Trading_0.Frame.Categories.SearchItem.TextBox.Text = "";
+        v47 = "All";
+        local v252 = l_Replion_0.Data.PlayerList[1] ~= l_LocalPlayer_0 and l_Replion_0.Data.PlayerList[1] or l_Replion_0.Data.PlayerList[2];
+        local v253 = l_Replion_0.Data.Players[tostring(v252.UserId)];
+        local v254 = l_Replion_0.Data.Players[tostring(l_LocalPlayer_0.UserId)];
+        l_Main_0.TheirOffer.PlayerName.TextLabel.Text = ("@%*'s Offer"):format(v252.Name);
+        l_Main_0.YourOffer.PlayerName.ImageLabel.Image = ("rbxthumb://type=AvatarHeadShot&id=%*&w=48&h=48"):format(l_LocalPlayer_0.UserId);
+        l_Main_0.TheirOffer.PlayerName.ImageLabel.Image = ("rbxthumb://type=AvatarHeadShot&id=%*&w=48&h=48"):format(v252.UserId);
+        l_Main_0.TheirOffer.TokenOffer.TextLabel.Text = ("%*"):format(v253.Tokens);
+        l_Main_0.YourOffer.TokenOffer.TextLabel.Text = ("%*"):format(v254.Tokens);
+        l_Main_0.TheirOffer.Accept.TextLabel.Text = "Accept";
+        l_Main_0.TheirOffer.ReadyFrame.Visible = false;
+        l_Main_0.YourOffer.ReadyFrame.Visible = false;
+        l_Main_0.TheirOffer.Accept.Grey.Visible = false;
+        l_Main_0.ConfirmLabel.Text = "";
+        l_Main_0.TheirOffer.Accept.Lock.Visible = false;
+        l_Main_0.TheirOffer.Accept.Lock.Timer.Text = "";
+        l_Main_0.TheirOffer.ReadyFrame.TextLabel.Text = "Player is Ready";
+        l_Main_0.YourOffer.ReadyFrame.TextLabel.Text = "Player is Ready";
+        v31:Add(l_Main_0.CloseButton.Activated:Connect(function() --[[ Line: 825 ]]
+            -- upvalues: l_CancelTrade_0 (ref), v12 (ref), l_message_0 (ref), l_Trading_0 (ref), v31 (ref), v18 (ref), v23 (ref), v19 (ref)
+            local v255, v256 = l_CancelTrade_0:InvokeServer();
+            if v255 then
+                v12.Message("Trade Ended!", l_message_0);
+                l_Trading_0.Enabled = false;
+                v31:Clean();
+                v18:Set(v23:Get("Settings.HideUI"));
+                v19:SetBackpackEnabled(true);
+                return;
+            else
+                v12.Message(v256, l_message_0);
+                return;
+            end;
+        end));
+        v31:Add(l_Main_0.TheirOffer.Decline.Activated:Connect(function() --[[ Line: 839 ]]
+            -- upvalues: l_CancelTrade_0 (ref), v12 (ref), l_message_0 (ref), l_Trading_0 (ref), v31 (ref), v18 (ref), v23 (ref), v19 (ref)
+            local v257, v258 = l_CancelTrade_0:InvokeServer();
+            if v257 then
+                v12.Message("Trade Ended!", l_message_0);
+                l_Trading_0.Enabled = false;
+                v31:Clean();
+                v18:Set(v23:Get("Settings.HideUI"));
+                v19:SetBackpackEnabled(true);
+                return;
+            else
+                v12.Message(v258, l_message_0);
+                return;
+            end;
+        end));
+        v31:Add(l_Main_0.TheirOffer.Accept.Activated:Connect(function() --[[ Line: 853 ]]
+            -- upvalues: l_Main_0 (ref), l_Replion_0 (copy), l_ConfirmTrade_0 (ref), l_SetReady_0 (ref)
+            if l_Main_0.TheirOffer.Accept.Lock.Visible then
+                return;
+            elseif l_Replion_0.Data.PlayersReady then
+                l_Main_0.TheirOffer.Accept.TextLabel.Text = "CONFIRMED";
+                if l_Main_0.YourOffer.ReadyFrame.TextLabel.Text == "Player is Ready" then
+                    l_Main_0.YourOffer.ReadyFrame.TextLabel.Text = "Waiting for player to confirm";
+                end;
+                local _ = l_ConfirmTrade_0:InvokeServer();
+                return;
+            else
+                local _, _ = l_SetReady_0:InvokeServer(true);
+                return;
+            end;
+        end));
+        v31:Add(l_Replion_0:OnChange(("Players.%*.IsReady"):format(v252.UserId), function(v262) --[[ Line: 869 ]]
+            -- upvalues: l_Main_0 (ref)
+            l_Main_0.TheirOffer.ReadyFrame.Visible = v262;
+        end));
+        v31:Add(l_Replion_0:OnChange(("Players.%*.IsReady"):format(l_LocalPlayer_0.UserId), function(v263) --[[ Line: 873 ]]
+            -- upvalues: l_Main_0 (ref)
+            l_Main_0.YourOffer.ReadyFrame.Visible = v263;
+            l_Main_0.TheirOffer.Accept.Grey.Visible = v263;
+        end));
+        v31:Add(l_Replion_0:OnChange(("Players.%*.IsConfirmed"):format(v252.UserId), function(v264) --[[ Line: 878 ]]
+            -- upvalues: l_Main_0 (ref)
+            if not v264 or l_Main_0.TheirOffer.Accept.TextLabel.Text == "CONFIRMED" then
+                l_Main_0.TheirOffer.ReadyFrame.TextLabel.Text = "Player is Ready";
+                return;
+            else
+                l_Main_0.TheirOffer.ReadyFrame.TextLabel.Text = "Waiting for player to confirm";
+                return;
+            end;
+        end));
+        v31:Add(l_Replion_0:OnChange("PlayersReady", function(v265) --[[ Line: 887 ]]
+            -- upvalues: l_Main_0 (ref)
+            l_Main_0.TheirOffer.Accept.TextLabel.Text = v265 and "Confirm" or "Accept";
+            l_Main_0.TheirOffer.Accept.Grey.Visible = false;
+        end));
+        v31:Add(l_Replion_0:OnChange("LastModifiedTime", function(v266) --[[ Line: 892 ]]
+            -- upvalues: l_Replion_0 (copy), v10 (ref), l_Main_0 (ref)
+            while not l_Replion_0.Destroyed and v266 == l_Replion_0.Data.LastModifiedTime do
+                local v267 = v266 + v10.ConfirmCountdownTime - workspace:GetServerTimeNow();
+                l_Main_0.TheirOffer.Accept.Lock.Visible = true;
+                l_Main_0.TheirOffer.Accept.Lock.Timer.Text = string.format("%.1f", v267);
+                task.wait(0.1);
+                if v267 <= 0.1 then
+                    break;
+                end;
+            end;
+            if not l_Replion_0.Destroyed and v266 == l_Replion_0.Data.LastModifiedTime then
+                l_Main_0.TheirOffer.Accept.Lock.Visible = false;
+            end;
+        end));
+        v31:Add(l_Replion_0:OnChange("TradeConfirmTime", function(v268) --[[ Line: 910 ]]
+            -- upvalues: l_Main_0 (ref), l_Replion_0 (copy), v10 (ref)
+            if v268 == 0 then
+                l_Main_0.ConfirmLabel.Text = "";
+                return;
+            else
+                l_Main_0.TheirOffer.ReadyFrame.TextLabel.Text = "Player Confirmed";
+                l_Main_0.YourOffer.ReadyFrame.TextLabel.Text = "Player Confirmed";
+                while not l_Replion_0.Destroyed and v268 == l_Replion_0.Data.TradeConfirmTime do
+                    local v269 = v268 + v10.ConfirmCountdownTime - workspace:GetServerTimeNow();
+                    l_Main_0.ConfirmLabel.Text = ("Trade finishing in: %*"):format((string.format("%.1f", v269)));
+                    task.wait(0.1);
+                    if v269 <= 0.1 then
+                        break;
+                    end;
+                end;
+                if not l_Replion_0.Destroyed and v268 == l_Replion_0.Data.LastModifiedTime then
+                    l_Main_0.ConfirmLabel.Text = "";
+                end;
+                return;
+            end;
+        end));
+        v31:Add(l_Main_0.YourOffer.TokenAmount.TextBox.FocusLost:Connect(function() --[[ Line: 935 ]]
+            -- upvalues: l_Main_0 (ref), v23 (ref), l_SetTokens_0 (ref), v12 (ref), l_message_0 (ref)
+            local v270 = math.clamp(tonumber(l_Main_0.YourOffer.TokenAmount.TextBox.Text) or 0, 0, v23:Get("NewInventory.Tokens") or 0);
+            l_Main_0.YourOffer.TokenAmount.TextBox.Text = v270;
+            local v271, v272 = l_SetTokens_0:InvokeServer(v270);
+            if v271 then
+                l_Main_0.YourOffer.TokenOffer.TextLabel.Text = ("%*"):format(v270);
+                return;
+            else
+                v12.Message(v272, l_message_0);
+                l_Main_0.YourOffer.TokenOffer.TextLabel.Text = "";
+                return;
+            end;
+        end));
+        v31:Add(l_Replion_0:OnChange(("Players.%*.Tokens"):format(v252.UserId), function(v273) --[[ Line: 952 ]]
+            -- upvalues: l_Main_0 (ref)
+            l_Main_0.TheirOffer.TokenOffer.TextLabel.Text = ("%*"):format(v273);
+        end));
+        l_Trading_0.Enabled = true;
+        v21:Close("TradeList");
+        v21:Close("TokenStore");
+        v249:UpdateInventory(l_Replion_0);
+        v59();
+        v31:Add(l_Trading_0.Frame.Categories.SearchItem.TextBox.Changed:Connect(function() --[[ Line: 966 ]]
+            -- upvalues: v59 (ref)
+            v59();
+        end));
+        v31:Add(v23:OnDescendantChange({
+            "NewInventory", 
+            "Equipped", 
+            "WeaponSkin"
+        }, function(_, _, _) --[[ Line: 975 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        v31:Add(v23:OnDescendantChange({
+            "NewInventory", 
+            "Equipped", 
+            "Finisher"
+        }, function(_, _, _) --[[ Line: 984 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        v31:Add(v23:OnDescendantChange({
+            "NewInventory", 
+            "Items", 
+            "Finisher"
+        }, function(_, _, _) --[[ Line: 995 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        v31:Add(v23:OnDescendantChange({
+            "NewInventory", 
+            "Items", 
+            "Weapon"
+        }, function(_, _, _) --[[ Line: 1004 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        v31:Add(v23:OnDescendantChange({
+            "NewInventory", 
+            "Items", 
+            "WeaponSkin"
+        }, function(_, _, _) --[[ Line: 1013 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        v31:Add(l_Replion_0:OnDescendantChange(("Players.%*.Items"):format(v252.UserId), function() --[[ Line: 1022 ]]
+            -- upvalues: v249 (copy), v252 (copy), l_Replion_0 (copy)
+            v249:UpdateOtherOffers(v252, l_Replion_0);
+        end));
+        v31:Add(l_Replion_0:OnDescendantChange(("Players.%*.Items"):format(l_LocalPlayer_0.UserId), function() --[[ Line: 1028 ]]
+            -- upvalues: v249 (copy), l_Replion_0 (copy)
+            v249:UpdateInventory(l_Replion_0);
+        end));
+        local v289 = v23:Get("NewInventory.Tokens") or 0;
+        l_Trading_0.Frame.Categories.TokenAmount.TextLabel.Text = ("Tokens: %*"):format(v289);
+        v31:Add(v23:OnChange("NewInventory.Tokens", function(v290, _) --[[ Line: 1041 ]]
+            -- upvalues: l_Trading_0 (ref)
+            l_Trading_0.Frame.Categories.TokenAmount.TextLabel.Text = ("Tokens: %*"):format(v290);
+        end));
+        local function _(v292) --[[ Line: 1047 ]] --[[ Name: AddFilterButton ]]
+            -- upvalues: v31 (ref), v47 (ref), v59 (ref)
+            v31:Add(v292.MouseButton1Click:Connect(function() --[[ Line: 1048 ]]
+                -- upvalues: v47 (ref), v292 (copy), v59 (ref)
+                v47 = v292.Name;
+                v59();
+            end));
+        end;
+        for _, v295 in l_Trading_0.Frame.Categories.Buttons:GetChildren() do
+            if v295:IsA("ImageButton") then
+                v31:Add(v295.MouseButton1Click:Connect(function() --[[ Line: 1048 ]]
+                    -- upvalues: v47 (ref), v295 (copy), v59 (ref)
+                    v47 = v295.Name;
+                    v59();
+                end));
+            end;
+        end;
+        v31:Add(l_Trading_0.Frame.Categories.Buttons.ChildAdded:Connect(function(v296) --[[ Line: 1060 ]]
+            -- upvalues: v31 (ref), v47 (ref), v59 (ref)
+            if v296:IsA("ImageButton") then
+                v31:Add(v296.MouseButton1Click:Connect(function() --[[ Line: 1048 ]]
+                    -- upvalues: v47 (ref), v296 (copy), v59 (ref)
+                    v47 = v296.Name;
+                    v59();
+                end));
+            end;
+        end));
+        return;
+    end;
+end;
+return v46;
